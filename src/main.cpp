@@ -11,7 +11,9 @@ using boost::asio::ip::tcp;
 #define PASSWORD "EatHealthy1"
 
 int main(int argc, char* argv[]) {
-	boost::asio::io_service io_service;
+	cout << "Initializing..." << endl;
+
+	/*boost::asio::io_service io_service;
 	tcp::resolver resolver(io_service);
 	tcp::resolver::query query(IP_ADDRESS, PORT);
 	tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
@@ -19,6 +21,9 @@ int main(int argc, char* argv[]) {
 	tcp::socket socket(io_service);
 	boost::system::error_code error = boost::asio::error::host_not_found;
 
+	cout << "Finished Initializing." << endl;
+
+	cout << "Connecting..." << endl;
 	while(error && endpoint_iterator != end) {
 		socket.close();
 		socket.connect(*endpoint_iterator++, error);
@@ -26,6 +31,8 @@ int main(int argc, char* argv[]) {
 	if(error) {
 		throw boost::system::system_error(error);
 	}
+
+	cout << "Connected." << endl << "Reading data from buffer..." << endl;
 
 	for (;;)
 	{
@@ -40,6 +47,11 @@ int main(int argc, char* argv[]) {
 
 		std::cout.write(buf.data(), len);
 	}
+
+	cout << "Finished." << endl << "Press any key to close... ";
+	
+	char key;
+	cin >> key;*/
 
 	return 0;
 }
