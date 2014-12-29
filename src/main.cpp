@@ -13,7 +13,7 @@ using boost::asio::ip::tcp;
 int main(int argc, char* argv[]) {
 	cout << "Initializing..." << endl;
 
-	/*boost::asio::io_service io_service;
+	boost::asio::io_service io_service;
 	tcp::resolver resolver(io_service);
 	tcp::resolver::query query(IP_ADDRESS, PORT);
 	tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
 	tcp::socket socket(io_service);
 	boost::system::error_code error = boost::asio::error::host_not_found;
 
-	cout << "Finished Initializing." << endl;
+	/*cout << "Finished Initializing." << endl;
 
 	cout << "Connecting..." << endl;
 	while(error && endpoint_iterator != end) {
