@@ -10,8 +10,14 @@ using boost::asio::ip::tcp;
 
 #define PASSWORD "user"
 
+struct elv3_command {
+	tcp::socket* client;
+	string message;
+};
+
 vector<tcp::socket*> all_clients;
 vector<tcp::socket*> logged_in_clients;
+vector<elv3_command> request_queue;
 
 void read_command(tcp::socket &socket, boost::array<char, 128> &buf, size_t &len, unsigned int timeout_delay = -1) {
 	boost::system::error_code error;
@@ -153,10 +159,16 @@ void communicator_loop() {
 			// See if anyone wants to queue up a command
 			boost::array<char, 128> buf;
 			size_t len;
+			elv3_command command;
 
-			read_command(*logged_in_clients.at(i), buf, len, 1);
+			read_command(*logged_in_clients.at(i), buf, len, 1); // 1 second timeout
+			buf[len] = '\0'; // null terminated char array
+			string buffer(buf.data());
 
-			//add buf command to queue?
+			command.message = buffer;
+			command.client = logged_in_clients.at(i);
+
+			request_queue.push_back(command);
 		}
 		cout << "Number of logged_in_clients: " << logged_in_clients.size() << endl;
 	}
