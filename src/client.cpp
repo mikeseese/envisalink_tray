@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
+#include <unistd.h>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 
@@ -108,6 +109,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef __gnu_linux__
 	pause();
+#endif
 #ifndef __gnu_linux__
 	system("pause");
 #endif

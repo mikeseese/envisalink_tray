@@ -166,6 +166,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef __gnu_linux__
 	pause();
+#endif
 #ifndef __gnu_linux__
 	system("pause");
 #endif

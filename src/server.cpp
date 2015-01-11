@@ -330,6 +330,7 @@ void connect_elv3() {
 
 #ifdef __gnu_linux__
 	pause();
+#endif
 #ifndef __gnu_linux__
 	system("pause");
 #endif
@@ -343,6 +344,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef __gnu_linux__
 	pause();
+#endif
 #ifndef __gnu_linux__
 	system("pause");
 #endif
@@ -359,6 +361,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef __gnu_linux__
 	pause();
+#endif
 #ifndef __gnu_linux__
 	system("pause");
 #endif
