@@ -1,6 +1,8 @@
 #include <iostream>
 #include <stdlib.h>
+#ifdef __gnu_linux__
 #include <unistd.h>
+#endif
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 
