@@ -3,45 +3,67 @@
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <vector>
 
 using namespace std;
 using boost::asio::ip::tcp;
 
+#define IP_ADDRESS "127.0.0.1"
+#define PORT "4025"
 #define PASSWORD "user"
 
-struct elv3_command {
-	tcp::socket* client;
-	string message;
+#define BUILD_TPI_EMULATOR
+
+struct elv3_tpi_raw_command {
+	boost::array<char, 128> buffer;
+	size_t length;
 };
 
+struct elv3_tpi_command {
+	elv3_tpi_raw_command command;
+	tcp::socket* client;
+};
+
+tcp::socket* elv3_tpi_socket;
+boost::asio::io_service elv3_tpi_io_service;
 vector<tcp::socket*> all_clients;
 vector<tcp::socket*> logged_in_clients;
-vector<elv3_command> request_queue;
+vector<elv3_tpi_command> command_queue;
 
-void read_command(tcp::socket &socket, boost::array<char, 128> &buf, size_t &len, unsigned int timeout_delay = -1) {
+void read_command(tcp::socket &socket, elv3_tpi_raw_command &cmd, unsigned int timeout_delay = -1) {
 	boost::system::error_code error;
 
-	len = socket.read_some(boost::asio::buffer(buf), error);
+	cmd.length = socket.read_some(boost::asio::buffer(cmd.buffer), error);
 	if (error == boost::asio::error::eof) {
 		cout << "Error [read_command]" << endl << "Error: Connection closed by peer" << endl;
-		buf.empty();
+		cmd.buffer.empty();
 		return;
 	}
 	else if (error) {
 		//throw boost::system::system_error(error); // Some other error.
 		cout << "Error [read_command]" << endl << "Error: " << error.value() << endl;;
-		buf.empty();
-		len = 0;
+		cmd.buffer.empty();
+		cmd.length = 0;
 		return;
 	}
 
-	if(buf[len-2] != '\r' || buf[len-1] != '\n') {
+	if(cmd.buffer[cmd.length-2] != '\r' || cmd.buffer[cmd.length-1] != '\n') {
 		cout << "Error [read_command]" << endl << "Error: No CR and LF" << endl;
-		buf.empty();
-		len = 0;
+		cmd.buffer.empty();
+		cmd.length = 0;
 		return;
 	}
+}
+
+void execute_command(elv3_tpi_command command) {
+	elv3_tpi_raw_command response;
+
+	boost::system::error_code ignored_error;
+	cout << "Relaying command: " << command.command.buffer.data() << endl;
+	boost::asio::write(*elv3_tpi_socket, boost::asio::buffer(command.command.buffer), boost::asio::transfer_all(), ignored_error);
+	//read_command(*elv3_tpi_socket, response);
+	//boost::asio::write(*command.client, boost::asio::buffer(response.buffer), boost::asio::transfer_all(), ignored_error);
 }
 
 string uitos_2_hex(unsigned int i) {
@@ -85,17 +107,17 @@ bool login_handshake(tcp::socket &socket) {
 	message.append(code);
 	message.append(data);
 	message.append(uitos_2_hex(calculate_checksum(message)));
-	cout << "Message prepared to write out: " << message.c_str() << endl;
 	message.append("\r\n");
 	boost::asio::write(socket, boost::asio::buffer(message), boost::asio::transfer_all(), ignored_error);
 
 	boost::array<char, 128> buf;
 	size_t len;
+	elv3_tpi_raw_command temp;
 
-	read_command(socket, buf, len, 10);
+	read_command(socket, temp, 10);
 
-	string buffer(buf.data());
-	cout << "buffer len: " << buffer.length() << endl;
+	string buffer(temp.buffer.data());
+	buffer = buffer.substr(0, temp.length);
 	if(check_checksum(buffer) && buffer.length() > 7) {
 		if(buffer.substr(0,3).compare("005") == 0) {
 			if(buffer.substr(3,buffer.length()-7).compare(PASSWORD) == 0) {
@@ -116,7 +138,6 @@ bool login_handshake(tcp::socket &socket) {
 	message.append(code);
 	message.append(data);
 	message.append(uitos_2_hex(calculate_checksum(message)));
-	cout << "Message prepared to write out: " << message.c_str() << endl;
 	message.append("\r\n");
 	boost::asio::write(socket, boost::asio::buffer(message), boost::asio::transfer_all(), ignored_error);
 
@@ -125,15 +146,18 @@ bool login_handshake(tcp::socket &socket) {
 
 void acceptor_loop() {
 	boost::asio::io_service io_service;
+#ifdef BUILD_TPI_EMULATOR
+	tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), 4025));
+#endif
+#ifndef BUILD_TPI_EMULATOR
 	tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), 1337));
-	boost::system::error_code ignored_error;
-	string message = "whats up bitches";
+#endif
 
 	for(;;) {
 		tcp::socket *socket = new tcp::socket(io_service);
 		acceptor.accept(*socket);
-		//boost::asio::write(socket, boost::asio::buffer(message), boost::asio::transfer_all(), ignored_error);
 		all_clients.push_back(socket);
+		Sleep(100);
 	}
 }
 
@@ -157,31 +181,108 @@ void communicator_loop() {
 
 		for(int i = 0; i < logged_in_clients.size(); i++) {
 			// See if anyone wants to queue up a command
-			boost::array<char, 128> buf;
-			size_t len;
-			elv3_command command;
+			cout << (*logged_in_clients.at(i)).available() << endl;
+#ifdef BUILD_TPI_EMULATOR
+				elv3_tpi_command cmd2;
+				cmd2.client = logged_in_clients.at(i);
+				read_command(*logged_in_clients.at(i), cmd2.command, 1);
+				cout << "Received command2: " << cmd2.command.buffer.data() << endl;
+#endif
+			if((*logged_in_clients.at(i)).available() > 0) {
+				boost::array<char, 128> buf;
+				size_t len;
+				elv3_tpi_command cmd;
+				cmd.client = logged_in_clients.at(i);
 
-			read_command(*logged_in_clients.at(i), buf, len, 1); // 1 second timeout
-			buf[len] = '\0'; // null terminated char array
-			string buffer(buf.data());
+				read_command(*logged_in_clients.at(i), cmd.command, 1);
 
-			command.message = buffer;
-			command.client = logged_in_clients.at(i);
-
-			request_queue.push_back(command);
+				//add buf command to queue
+				command_queue.push_back(cmd);
+				cout << "Received command: " << cmd.command.buffer.data() << endl;
+			}
 		}
-		cout << "Number of logged_in_clients: " << logged_in_clients.size() << endl;
+		Sleep(100);
 	}
+}
+
+void command_loop() {
+	for(;;) {
+		for(int i = 0; i < command_queue.size(); i++) {
+			execute_command(command_queue.at(i));
+		}
+		command_queue.clear();
+		Sleep(100);
+	}
+}
+
+void connect_elv3() {
+	cout << "Connecting to ELV3 TPI..." << endl;
+	char key;
+
+	boost::system::error_code error = boost::asio::error::host_not_found;
+	
+	tcp::resolver resolver(elv3_tpi_io_service);
+	tcp::resolver::query query(IP_ADDRESS, PORT);
+	tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+	tcp::resolver::iterator end;
+	elv3_tpi_socket = new tcp::socket(elv3_tpi_io_service);
+
+	while(error && endpoint_iterator != end) {
+		(*elv3_tpi_socket).close();
+		(*elv3_tpi_socket).connect(*endpoint_iterator++, error);
+	}
+	if(error) {
+		//throw boost::system::system_error(error);
+		cout << "Error 1" << endl << "Error: " << error.value();
+		cin >> key;
+		return;
+	}
+
+	cout << "Connected." << endl << "Reading data from buffer..." << endl;
+
+	boost::array<char, 128> buf;
+	size_t len;
+	elv3_tpi_raw_command temp;
+
+	read_command((*elv3_tpi_socket), temp);
+	cout << "RX:" << endl;
+	std::cout.write(temp.buffer.data(), temp.length);
+
+	boost::system::error_code ignored_error;
+	string message;
+	string code = "005";
+	string data = PASSWORD;
+	message.append(code);
+	message.append(data);
+	message.append(uitos_2_hex(calculate_checksum(message)));
+	cout << "Message prepared to write out: " << message.c_str() << endl;
+	message.append("\r\n");
+	boost::asio::write((*elv3_tpi_socket), boost::asio::buffer(message), boost::asio::transfer_all(), ignored_error);
+
+
+	read_command((*elv3_tpi_socket), temp);
+	cout << "RX:" << endl;
+	std::cout.write(temp.buffer.data(), temp.length);
+	system("pause");
 }
 
 int main(int argc, char* argv[]) {
 	cout << "Server" << endl;
+
+#ifndef BUILD_TPI_EMULATOR
+	connect_elv3();
+
+	system("pause");
+#endif
 
 	boost::thread acceptor_thread(acceptor_loop);
 	acceptor_thread.detach();
 
 	boost::thread communicator_thread(communicator_loop);
 	communicator_thread.detach();
+
+	boost::thread command_thread(command_loop);
+	command_thread.detach();
 	
 	system("pause");
 
