@@ -131,8 +131,8 @@ void execute_command(elv3_tpi_command command) {
 	cout << "Relaying command: " << command.command.buffer.data() << endl;
 	cout << "Command length: " << command.command.length << endl;
 	boost::asio::write(*elv3_tpi_socket, boost::asio::buffer(command.command.buffer, command.command.length), boost::asio::transfer_all(), ignored_error);
-	//read_command(*elv3_tpi_socket, response);
-	//boost::asio::write(*command.client, boost::asio::buffer(response.buffer), boost::asio::transfer_all(), ignored_error);
+	read_command(*elv3_tpi_socket, response);
+	boost::asio::write(*command.client, boost::asio::buffer(response.buffer, response.length), boost::asio::transfer_all(), ignored_error);
 }
 
 string uitos_2_hex(unsigned int i) {
@@ -255,6 +255,20 @@ void communicator_loop() {
 				cmd2.client = logged_in_clients.at(i);
 				read_command(*logged_in_clients.at(i), cmd2.command, 1);
 				cout << "Received command2: " << cmd2.command.buffer.data() << endl;
+				string temp_string(cmd2.command.buffer.data());
+				temp_string = temp_string.substr(0, cmd2.command.length);
+				string recv_code = temp_string.substr(0, 3);
+				
+				// send ack
+				boost::system::error_code ignored_error;
+				string code = "500";
+				string message;
+				message.append(code);
+				message.append(recv_code);
+				message.append(uitos_2_hex(calculate_checksum(message)));
+				cout << "Message prepared to write out: " << message.c_str() << endl;
+				message.append("\r\n");
+				boost::asio::write(*cmd2.client, boost::asio::buffer(message), boost::asio::transfer_all(), ignored_error);
 #endif
 			if((*logged_in_clients.at(i)).available() > 0) {
 				boost::array<char, 128> buf;
