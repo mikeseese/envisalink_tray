@@ -10,6 +10,8 @@
 using namespace std;
 using boost::asio::ip::tcp;
 
+string s;
+
 #define IP_ADDRESS "127.0.0.1"
 #define PORT "4025"
 #define PASSWORD "user"
@@ -329,7 +331,7 @@ void connect_elv3() {
 	std::cout.write(temp.buffer.data(), temp.length);
 
 #ifdef __gnu_linux__
-	pause();
+	getline(cin,s);
 #endif
 #ifndef __gnu_linux__
 	system("pause");
@@ -343,7 +345,7 @@ int main(int argc, char* argv[]) {
 	connect_elv3();
 
 #ifdef __gnu_linux__
-	pause();
+	getline(cin,s);
 #endif
 #ifndef __gnu_linux__
 	system("pause");
@@ -360,7 +362,7 @@ int main(int argc, char* argv[]) {
 	command_thread.detach();
 
 #ifdef __gnu_linux__
-	pause();
+	getline(cin,s);
 #endif
 #ifndef __gnu_linux__
 	system("pause");

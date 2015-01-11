@@ -11,6 +11,8 @@ using boost::asio::ip::tcp;
 #define PORT "1337"
 #define PASSWORD "user"
 
+string s;
+
 #ifdef __gnu_linux__
 
 void Sleep(unsigned int milliseconds) {
@@ -165,7 +167,7 @@ int main(int argc, char* argv[]) {
 	std::cout.write(buf.data(), len);
 
 #ifdef __gnu_linux__
-	pause();
+	getline(cin,s);
 #endif
 #ifndef __gnu_linux__
 	system("pause");
