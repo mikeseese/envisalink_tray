@@ -116,6 +116,8 @@ void read_command(tcp::socket &socket, elv3_tpi_raw_command &cmd, unsigned int t
 
 	if(cmd.buffer[cmd.length-2] != '\r' || cmd.buffer[cmd.length-1] != '\n') {
 		cout << "Error [read_command]" << endl << "Error: No CR and LF" << endl;
+		cout << "buffer: '" << cmd.buffer.data() << "'" << endl;
+		cout << "length: " << cmd.length << endl;
 		cmd.buffer.empty();
 		cmd.length = 0;
 		return;
@@ -127,7 +129,8 @@ void execute_command(elv3_tpi_command command) {
 
 	boost::system::error_code ignored_error;
 	cout << "Relaying command: " << command.command.buffer.data() << endl;
-	boost::asio::write(*elv3_tpi_socket, boost::asio::buffer(command.command.buffer), boost::asio::transfer_all(), ignored_error);
+	cout << "Command length: " << command.command.length << endl;
+	boost::asio::write(*elv3_tpi_socket, boost::asio::buffer(command.command.buffer, command.command.length), boost::asio::transfer_all(), ignored_error);
 	//read_command(*elv3_tpi_socket, response);
 	//boost::asio::write(*command.client, boost::asio::buffer(response.buffer), boost::asio::transfer_all(), ignored_error);
 }
@@ -247,7 +250,6 @@ void communicator_loop() {
 
 		for(int i = 0; i < logged_in_clients.size(); i++) {
 			// See if anyone wants to queue up a command
-			cout << (*logged_in_clients.at(i)).available() << endl;
 #ifdef BUILD_TPI_EMULATOR
 				elv3_tpi_command cmd2;
 				cmd2.client = logged_in_clients.at(i);
@@ -329,14 +331,6 @@ void connect_elv3() {
 	read_command((*elv3_tpi_socket), temp);
 	cout << "RX:" << endl;
 	std::cout.write(temp.buffer.data(), temp.length);
-
-#ifdef __gnu_linux__
-	cout << "Press enter to continue...";
-	getline(cin,s);
-#endif
-#ifndef __gnu_linux__
-	system("pause");
-#endif
 }
 
 int main(int argc, char* argv[]) {

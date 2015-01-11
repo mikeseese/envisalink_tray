@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
 		socket.connect(*endpoint_iterator++, error);
 	}
 	if(error) {
-		//throw boost::system::system_error(error);
+		throw boost::system::system_error(error);
 		cout << "Error 1" << endl << "Error: " << error.value();
 		cin >> key;
 		return -1;
@@ -165,6 +165,24 @@ int main(int argc, char* argv[]) {
 	read_command(socket, buf, len);
 	cout << "RX:" << endl;
 	std::cout.write(buf.data(), len);
+
+#ifdef __gnu_linux__
+	cout << "Press enter to continue...";
+	getline(cin,s);
+#endif
+#ifndef __gnu_linux__
+	system("pause");
+#endif
+
+	code = "000";
+	data = "";
+	message.clear();
+	message.append(code);
+	message.append(data);
+	message.append(calculate_checksum(message));
+	cout << "Message prepared to write out: " << message.c_str() << endl;
+	message.append("\r\n");
+	boost::asio::write(socket, boost::asio::buffer(message), boost::asio::transfer_all(), ignored_error);
 
 #ifdef __gnu_linux__
 	cout << "Press enter to continue...";
