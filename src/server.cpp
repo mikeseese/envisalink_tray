@@ -132,6 +132,8 @@ void execute_command(elv3_tpi_command command) {
 	cout << "Command length: " << command.command.length << endl;
 	boost::asio::write(*elv3_tpi_socket, boost::asio::buffer(command.command.buffer, command.command.length), boost::asio::transfer_all(), ignored_error);
 	read_command(*elv3_tpi_socket, response);
+	cout << "ELV3 responded with command: " << response.buffer.data() << endl;
+	cout << "Relaying response to client..." << endl;
 	boost::asio::write(*command.client, boost::asio::buffer(response.buffer, response.length), boost::asio::transfer_all(), ignored_error);
 }
 
@@ -258,7 +260,7 @@ void communicator_loop() {
 				string temp_string(cmd2.command.buffer.data());
 				temp_string = temp_string.substr(0, cmd2.command.length);
 				string recv_code = temp_string.substr(0, 3);
-				
+
 				// send ack
 				boost::system::error_code ignored_error;
 				string code = "500";

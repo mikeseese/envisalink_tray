@@ -184,6 +184,11 @@ int main(int argc, char* argv[]) {
 	message.append("\r\n");
 	boost::asio::write(socket, boost::asio::buffer(message), boost::asio::transfer_all(), ignored_error);
 
+
+	read_command(socket, buf, len);
+	cout << "RX:" << endl;
+	std::cout.write(buf.data(), len);
+
 #ifdef __gnu_linux__
 	cout << "Press enter to continue...";
 	getline(cin,s);
