@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
+#include <unistd.h>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
@@ -13,7 +14,7 @@ using boost::asio::ip::tcp;
 #define PORT "4025"
 #define PASSWORD "user"
 
-#define BUILD_TPI_EMULATOR
+//#define BUILD_TPI_EMULATOR
 
 struct elv3_tpi_raw_command {
 	boost::array<char, 128> buffer;
@@ -326,7 +327,12 @@ void connect_elv3() {
 	read_command((*elv3_tpi_socket), temp);
 	cout << "RX:" << endl;
 	std::cout.write(temp.buffer.data(), temp.length);
+
+#ifdef __gnu_linux__
+	pause();
+#ifndef __gnu_linux__
 	system("pause");
+#endif
 }
 
 int main(int argc, char* argv[]) {
@@ -335,7 +341,11 @@ int main(int argc, char* argv[]) {
 #ifndef BUILD_TPI_EMULATOR
 	connect_elv3();
 
+#ifdef __gnu_linux__
+	pause();
+#ifndef __gnu_linux__
 	system("pause");
+#endif
 #endif
 
 	boost::thread acceptor_thread(acceptor_loop);
@@ -346,8 +356,12 @@ int main(int argc, char* argv[]) {
 
 	boost::thread command_thread(command_loop);
 	command_thread.detach();
-	
+
+#ifdef __gnu_linux__
+	pause();
+#ifndef __gnu_linux__
 	system("pause");
+#endif
 
 	return 0;
 }

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
+#include <unistd.h>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 
@@ -162,8 +163,12 @@ int main(int argc, char* argv[]) {
 	read_command(socket, buf, len);
 	cout << "RX:" << endl;
 	std::cout.write(buf.data(), len);
-	
+
+#ifdef __gnu_linux__
+	pause();
+#ifndef __gnu_linux__
 	system("pause");
+#endif
 
 	return 0;
 }

@@ -105,8 +105,12 @@ int main(int argc, char* argv[]) {
 	cout << "Messaged RXd:" << endl;
 	std::cout.write(buf.data(), len);
 	cout << endl;
-	
+
+#ifdef __gnu_linux__
+	pause();
+#ifndef __gnu_linux__
 	system("pause");
+#endif
 
 	return 0;
 }
