@@ -167,6 +167,7 @@ int main(int argc, char* argv[]) {
 	std::cout.write(buf.data(), len);
 
 #ifdef __gnu_linux__
+	cout << "Press enter to continue...";
 	getline(cin,s);
 #endif
 #ifndef __gnu_linux__
